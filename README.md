@@ -1,5 +1,4 @@
-# CSC 305 Introduction to Computer Graphics - Spring 2018
+## Course work from CSC 305 Introduction to Computer Graphics - Spring 2018
 
-## Lab Exercises and Code
-
-Please see the wiki [here](https://github.com/arthurfirmino/icg/wiki/) for lab exercise descriptions.
+### TODO
+- Update assignment 2 to read from proper directory
