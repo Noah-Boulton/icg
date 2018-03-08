@@ -6,9 +6,9 @@ uniform float tex_height;
 in vec2 uv;
 out vec3 color;
 
-#define GAUSSIAN
+//#define GAUSSIAN
 //#define SOBEL
-//#define NORMAL
+#define NORMAL
 
 #ifdef SOBEL
 float rgb_2_luma(vec3 c){ return .3*c[0] + .59*c[1] + .11*c[2]; }
