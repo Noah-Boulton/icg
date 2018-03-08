@@ -13,7 +13,8 @@ struct Line {
 };
 
 float triangleArea(Vec3 v1, Vec3 v2, Vec3 v3) {
-    return 0; /// TODO: Calculate the area of the triangle
+    /// TODO: Calculate the area of the triangle
+    return 0.5f*(v1(0)*v2(1) + v2(0)*v3(1) + v3(0)*v1(1) - v1(0)*v3(1) - v2(0)*v1(1) - v3(0)*v2(1));
 }
 
 void rasterize(Triangle t, Image<Colour> &image) {
@@ -39,12 +40,12 @@ void rasterize(Triangle t, Image<Colour> &image) {
             pt = 2 * (pt - Vec3(0.5,0.5,0));
 
             /// TODO: Calculate barycentric coordinates of the fragment within current triangle
-            float alpha = 0.0f;
-            float beta = 0.0f;
-            float gamma = 0.0f;
+            float alpha = triangleArea(pt, s2, s3)/totalArea;
+            float beta = triangleArea(s1, pt, s3)/totalArea;
+            float gamma = triangleArea(s1, s2, pt)/totalArea;
 
-            if (false /** TODO: check if fragment is inside triangle **/) {
-                image(j,i) = Colour(0.5f,1.0f,0);
+            if (alpha <= 1.0f && alpha >= 0.0f && beta <= 1.0f && beta >= 0.0f && gamma <= 1.0f && gamma >= 0.0f){
+                image(j,i) = Colour(alpha, beta, gamma);
             }
         }
     }
@@ -58,19 +59,23 @@ void rasterize(Line l, Image<Colour> &image) {
     Vec3 s2 = Vec3(l.v2(0), l.v2(1), 0);
 
     /// TODO: Calculate error delta
-    float deltax = 0.0f;
-    float deltay = 0.0f;
-    float deltaerr = 0.0f;
+    float deltax = s2(0) - s1(0);
+    float deltay = s2(1) - s1(1);
+    float deltaerr = std::abs(deltay/deltax);
     float error = 0.0f;
 
     /// TODO: Calculate starting pixel y-coordinate
-    int y = 0;
+    int y = ((s1(1)+1)*0.5f)*image.rows();
 
     /// TODO: Calculate for-loop bounds (pixel x-coorinate bounds)
-    for ( int x = 0 ; x <= -1 ; ++x) {
+    for ( int x = ((s1(0)+1)*0.5f)*image.cols() ; x <= ((s2(0)+1)*0.5f)*image.cols() ; ++x) {
         image(y,x) = Colour(0.5f,1.0f,0);
         /// TODO: Rest of Bresenham's line algorithm
-
+        error += deltaerr;
+        while(error >= 0.05f){
+            y += deltay > 0 ? 1 : -1;
+            error -= 1.0f;
+        }
     }
 }
 

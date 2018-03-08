@@ -54,19 +54,21 @@ void rasterize(Triangle t, Image<Colour> &image, Image<float> &depth) {
             float gamma = triangleArea(s1,s2,pt) / totalArea;
 
             /// TODO: Calculate depth value of fragment (Use z-component of vertex positions)
-            float z = 0.0f;
+            float z = alpha*t.v1(2) + beta*t.v2(2) + gamma*t.v3(2);
 
             /// TODO: check if fragment is not behind previous fragment
-            if (alpha>=0.0f && alpha<=1.0f && beta>=0.0f && beta<=1.0f && gamma>=0.0f &&gamma<=1.0f) {
+            if (z < depth(j, i) && alpha>=0.0f && alpha<=1.0f && beta>=0.0f && beta<=1.0f && gamma>=0.0f &&gamma<=1.0f) {
 
                 /// TODO: Calculate instead interpolated normal vector of fragment
-                // Flat shading normal
-                Vec3 normal = t.n1 + t.n2 + t.n3;
+                Vec3 normal = alpha*t.n1 + beta*t.n2 + gamma*t.n3;
                 normal = normal.normalized();
+                // Flat shading normal
+                //Vec3 normal = t.n1 + t.n2 + t.n3;
+                //normal = normal.normalized();
 
                 /// Visualize normals / regular shading option
-                // image(j, i) = 0.5f*(Colour(normal(0),normal(1),normal(2))+Colour(1.0f, 1.0f, 1.0f));
-                image(j, i) = shadeFragment(normal);
+                image(j, i) = 0.5f*(Colour(normal(0),normal(1),normal(2))+Colour(1.0f, 1.0f, 1.0f));
+                //image(j, i) = shadeFragment(normal);
 
                 // Set depth of fragment
                 depth(j, i) = z;
@@ -139,7 +141,11 @@ int main(int, char**){
         };
 
         /// Why don't we apply the mvp transformation to the normals?
+        ///     Usually we do the normals for diffuse lighting, when we do that we are usually in world coordinates
+        ///     so we want to keep our normals in world coordinates
         /// What transformations should apply to the normals?
+        ///     Normal matrix = ((M3x3)^-1)^T
+        ///     Because we dont scale or rotate then we dont need to worry about this
         for (int i = 0;i < 3;i++) {
             auto vi = mesh.to_vertex(halfedges[i]);
             Vec3 v = vpoint[vi];

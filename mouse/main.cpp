@@ -57,9 +57,9 @@ int main(int, char**){
         Vec2 p = 2.0f*(Vec2(m.position.x()/width,-m.position.y()/height) - Vec2(0.5f,-0.5f));
         if( selection && (p-position).norm() > 0.0f) {
             /// TODO: Make selected control points move with cursor
-
-
-
+            selection->x() = position.x();
+            selection->y() = position.y();
+            line->set_vbo<Vec2>("vposition", controlPoints);
         }
         position = p;
     });
