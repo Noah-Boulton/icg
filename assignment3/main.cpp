@@ -61,6 +61,9 @@ std::unique_ptr<Shader> fbShader;
 std::unique_ptr<RGBA8Texture> cat;
 std::unique_ptr<RGBA8Texture> stars;
 
+std::unique_ptr<RGBA8Texture> halo;
+
+
 /// TODO: declare Framebuffer and color buffer texture
 std::unique_ptr<Framebuffer> fb;
 std::unique_ptr<RGBA8Texture> c_buf;
@@ -226,8 +229,9 @@ void init(){
 
     quadInit(quad);
 
-    loadTexture(cat, "nyancat.png");
-    loadTexture(stars, "background.png");
+    loadTexture(cat, "greg.png");
+    loadTexture(stars, "court.png");
+    loadTexture(halo, "basketball.png");
 
     //NEW
     glClearColor(1,1,1, /*solid*/1.0 );
@@ -239,14 +243,16 @@ void init(){
     lineShader->link();
 
     controlPoints = std::vector<Vec2>();
+    controlPoints.push_back(Vec2( 0.9f, 0.9f));
     controlPoints.push_back(Vec2(-0.7f,-0.2f));
     controlPoints.push_back(Vec2(-0.3f, 0.2f));
     controlPoints.push_back(Vec2( 0.3f, 0.5f));
     controlPoints.push_back(Vec2( 0.7f, 0.0f));
+    controlPoints.push_back(Vec2( 0.0f, 0.0f));
 
     line = std::unique_ptr<GPUMesh>(new GPUMesh());
     line->set_vbo<Vec2>("vposition", controlPoints);
-    std::vector<unsigned int> indices = {0,1,2,3};
+    std::vector<unsigned int> indices = {0,1,2,3,4,5};
     line->set_triangles(indices);
 }
 
@@ -353,11 +359,27 @@ void drawScene(float timeCount)
     Vec2 P1 = controlPoints[1];
     Vec2 P2 = controlPoints[2];
     Vec2 P3 = controlPoints[3];
-    float xcord = (1-t)*(1-t)*(1-t)*P0(0) + 3.0f*(1-t)*(1-t)*t*P1(0) + 3.0f*(1-t)*t*P2(0) + t*P3(0);
-    float ycord = (1-t)*(1-t)*(1-t)*P0(1) + 3.0f*(1-t)*(1-t)*t*P1(1) + 3.0f*(1-t)*t*P2(1) + t*P3(1);
+    Vec2 P4 = controlPoints[4];
+    Vec2 P5 = controlPoints[5];
+
+//    float xcord = (1-t)*(1-t)*(1-t)*P0(0) + 3.0f*(1-t)*(1-t)*t*P1(0) + 3.0f*(1-t)*t*P2(0) + t*P3(0);
+//    float ycord = (1-t)*(1-t)*(1-t)*P0(1) + 3.0f*(1-t)*(1-t)*t*P1(1) + 3.0f*(1-t)*t*P2(1) + t*P3(1);
+
+    float xcord = pow((1-t), 5.0f)*P0(0)
+                + 5.0f*t*pow((1-t), 4.0f)*P1(0)
+                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2(0)
+                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3(0)
+                + 5.0f*pow(t, 4.0f)*(1-t)*P4(0)
+                + pow(t, 5.0f)*P5(0);
+    float ycord = pow((1-t), 5.0f)*P0(1)
+                + 5.0f*t*pow((1-t), 4.0f)*P1(1)
+                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2(1)
+                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3(1)
+                + 5.0f*pow(t, 4.0f)*(1-t)*P4(1)
+                + pow(t, 5.0f)*P5(1);
 
     TRS *= Eigen::Translation3f(xcord, ycord, 0);
-    TRS *= Eigen::AngleAxisf(t + M_PI / 2, Eigen::Vector3f::UnitZ());
+    //TRS *= Eigen::AngleAxisf(t + M_PI / 2, Eigen::Vector3f::UnitZ());
     TRS *= Eigen::AlignedScaling3f(0.2f, 0.2f, 1);
 
     quadShader->bind();
@@ -372,6 +394,29 @@ void drawScene(float timeCount)
     quad->set_attributes(*quadShader);
     quad->draw();
     cat->unbind();
+
+    // Make the moon orbit around the earth with 0.2 units of distance
+    TRS *= Eigen::AngleAxisf(t/(0.25/4.0), Eigen::Vector3f::UnitZ());
+    TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
+    // Make the moon spining according to MOON_ROT_PERIOD
+    TRS *= Eigen::AngleAxisf(-t/(0.25/4.0), -Eigen::Vector3f::UnitZ());
+    // Make the picture of moon smaller!
+    TRS *= Eigen::AlignedScaling3f(0.5f, 0.5f, 1);
+
+    //make another thing rotate the cat
+    quadShader->bind();
+    // Make texture unit 0 active
+    quadShader->set_uniform("M", TRS.matrix());
+    glActiveTexture(GL_TEXTURE0);
+    // Bind the texture to the active unit for drawing
+    halo->bind();
+    // Set the shader's texture uniform to the index of the texture unit we have
+    // bound the texture to
+    quadShader->set_uniform("tex", 0);
+    quad->set_attributes(*quadShader);
+    quad->draw();
+    halo->unbind();
+
     quadShader->unbind();
 
     glDisable(GL_BLEND);

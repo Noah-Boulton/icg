@@ -19,7 +19,7 @@ add_subdirectory(transform)
 #dd_subdirectory(antialiasing)
 #add_subdirectory(framebuffer2d)
 #add_subdirectory(mouse)
-add_subdirectory(mouse_framebuffer)
+#add_subdirectory(mouse_framebuffer)
 add_subdirectory(assignment3)
 
 #add_subdirectory(assignment2)

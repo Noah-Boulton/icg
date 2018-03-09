@@ -12,3 +12,7 @@ target_link_libraries(${EXERCISENAME} ${COMMON_LIBS})
 #--- data need to be copied to run folder
 file(COPY ${PROJECT_SOURCE_DIR}/assignment3/nyancat.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${PROJECT_SOURCE_DIR}/assignment3/background.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${PROJECT_SOURCE_DIR}/assignment3/greg.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${PROJECT_SOURCE_DIR}/assignment3/basketball.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${PROJECT_SOURCE_DIR}/assignment3/court.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
