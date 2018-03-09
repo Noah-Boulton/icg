@@ -62,6 +62,7 @@ std::unique_ptr<RGBA8Texture> cat;
 std::unique_ptr<RGBA8Texture> stars;
 
 std::unique_ptr<RGBA8Texture> halo;
+std::unique_ptr<RGBA8Texture> speech;
 
 
 /// TODO: declare Framebuffer and color buffer texture
@@ -232,6 +233,7 @@ void init(){
     loadTexture(cat, "greg.png");
     loadTexture(stars, "court.png");
     loadTexture(halo, "basketball.png");
+    loadTexture(speech, "speech.png");
 
     //NEW
     glClearColor(1,1,1, /*solid*/1.0 );
@@ -244,11 +246,11 @@ void init(){
 
     controlPoints = std::vector<Vec2>();
     controlPoints.push_back(Vec2( 0.9f, 0.9f));
-    controlPoints.push_back(Vec2(-0.7f,-0.2f));
-    controlPoints.push_back(Vec2(-0.3f, 0.2f));
-    controlPoints.push_back(Vec2( 0.3f, 0.5f));
-    controlPoints.push_back(Vec2( 0.7f, 0.0f));
+    controlPoints.push_back(Vec2( 0.7f, 0.7f));
+    controlPoints.push_back(Vec2( 0.25f, 0.25f));
     controlPoints.push_back(Vec2( 0.0f, 0.0f));
+    controlPoints.push_back(Vec2(-0.5f,-0.5f));
+    controlPoints.push_back(Vec2( -0.9f, -0.9f));
 
     line = std::unique_ptr<GPUMesh>(new GPUMesh());
     line->set_vbo<Vec2>("vposition", controlPoints);
@@ -394,6 +396,22 @@ void drawScene(float timeCount)
     quad->set_attributes(*quadShader);
     quad->draw();
     cat->unbind();
+
+    TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
+    quadShader->bind();
+    quadShader->set_uniform("M", TRS.matrix());
+    // Make texture unit 0 active
+    glActiveTexture(GL_TEXTURE0);
+    // Bind the texture to the active unit for drawing
+    speech->bind();
+    // Set the shader's texture uniform to the index of the texture unit we have
+    // bound the texture to
+    quadShader->set_uniform("tex", 0);
+    quad->set_attributes(*quadShader);
+    quad->draw();
+    speech->unbind();
+
+    TRS *= Eigen::Translation3f(-1.0, -1.0, 0.0);
 
     // Make the moon orbit around the earth with 0.2 units of distance
     TRS *= Eigen::AngleAxisf(t/(0.25/4.0), Eigen::Vector3f::UnitZ());
