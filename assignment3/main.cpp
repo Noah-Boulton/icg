@@ -61,7 +61,7 @@ std::unique_ptr<RGBA8Texture> ball;
 std::unique_ptr<RGBA8Texture> speech;
 
 
-/// TODO: declare Framebuffer and color buffer texture
+//Declare Framebuffer and color buffer texture
 std::unique_ptr<Framebuffer> fb;
 std::unique_ptr<RGBA8Texture> c_buf;
 
@@ -70,27 +70,27 @@ int main(int, char**){
     Application app;
     init();
 
-    /// TODO: initialize framebuffer
+    //Initialize framebuffer
     fb = std::unique_ptr<Framebuffer>(new Framebuffer());
-    /// TODO: initialize color buffer texture, and allocate memory
+    //Initialize color buffer texture, and allocate memory
     c_buf = std::unique_ptr<RGBA8Texture>(new RGBA8Texture());
     c_buf->allocate(width, height);
-    /// TODO: attach color texture to framebuffer
+    //Attach color texture to framebuffer
     fb->attach_color_texture(*c_buf);
 
     Window& window = app.create_window([](Window&){
         glViewport(0,0,width,height);
-        /// TODO: First draw the scene onto framebuffer
-        /// bind and then unbind framebuffer
+        //Draw the scene onto framebuffer
+        //Bind and then unbind framebuffer
         fb->bind();
             glClear(GL_COLOR_BUFFER_BIT);
             drawScene(glfwGetTime());
         fb->unbind();
-        /// Render to Window, uncomment the lines and do TODOs
+        //Render to Window, uncomment the lines and do TODOs
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
         fbShader->bind();
-        /// TODO: Bind texture and set uniforms
+        //Bind texture and set uniforms
         glActiveTexture(GL_TEXTURE0);
         c_buf->bind();
         fbShader->set_uniform("tex", 0);
@@ -98,7 +98,7 @@ int main(int, char**){
         fbShader->set_uniform("tex_height", float(height));
         quad->set_attributes(*fbShader);
         quad->draw();
-        /// Also unbind the texture
+        //Unbind the texture
         c_buf->unbind();
         fbShader->unbind();
     });
@@ -120,6 +120,7 @@ int main(int, char**){
     selectionFB->attach_color_texture(*selectionColor);
     selectionFB->attach_depth_texture(*selectionDepth);
 
+    //Setup mouse input for editing Bezier curve in seperate window
     // Mouse position and selected point
     Vec2 pixelPosition = Vec2(0,0);
     Vec2 position = Vec2(0,0);
@@ -224,7 +225,6 @@ void init(){
     loadTexture(ball, "basketball.png");
     loadTexture(speech, "speech.png");
 
-    //NEW
     glClearColor(1,1,1, /*solid*/1.0 );
 
     lineShader = std::unique_ptr<Shader>(new Shader());
@@ -292,8 +292,7 @@ void loadTexture(std::unique_ptr<RGBA8Texture> &texture, const char *filename) {
     texture->upload_raw(width, height, &image[0]);
 }
 
-void drawScene(float timeCount)
-{
+void drawScene(float timeCount) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -323,7 +322,7 @@ void drawScene(float timeCount)
     Vec2 P4 = controlPoints[4];
     Vec2 P5 = controlPoints[5];
 
-    //Calculate Greg's posistion
+    //Calculate Greg's posistion based on the Bezier Curve
     Vec2 pos = pow((1-t), 5.0f)*P0
                 + 5.0f*t*pow((1-t), 4.0f)*P1
                 + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2
@@ -331,6 +330,7 @@ void drawScene(float timeCount)
                 + 5.0f*pow(t, 4.0f)*(1-t)*P4
                 + pow(t, 5.0f)*P5;
 
+    //Setup translation and scaling
     TRS *= Eigen::Translation3f(pos(0), pos(1), 0);
     TRS *= Eigen::AlignedScaling3f(t*0.5f, t*0.5f, 1);
     quadShader->bind();
@@ -345,6 +345,7 @@ void drawScene(float timeCount)
     quad->draw();
     greg->unbind();
 
+    //Setup transalaton for speech bubble relative to Greg
     TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
     quadShader->bind();
     quadShader->set_uniform("M", TRS.matrix());
@@ -358,6 +359,7 @@ void drawScene(float timeCount)
     quad->draw();
     speech->unbind();
 
+    //Translate back to Greg's posistion to setup ball matrix
     TRS *= Eigen::Translation3f(-1.0, -1.0, 0.0);
 
     // Make the ball orbit around Greg
