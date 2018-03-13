@@ -5,6 +5,8 @@ using namespace OpenGP;
 
 const int width=720, height=720;
 typedef Eigen::Transform<float,3,Eigen::Affine> Transform;
+#define POINTSIZE 10.0f
+const float SpeedFactor = 0.5;
 
 const char* fb_vshader =
 #include "fb_vshader.glsl"
@@ -18,9 +20,6 @@ const char* quad_vshader =
 const char* quad_fshader =
 #include "quad_fshader.glsl"
 ;
-
-//NEW
-#define POINTSIZE 10.0f
 
 const char* line_vshader =
 #include "line_vshader.glsl"
@@ -45,9 +44,6 @@ std::unique_ptr<Framebuffer> selectionFB;
 std::unique_ptr<RGBA8Texture> selectionColor;
 std::unique_ptr<D16Texture> selectionDepth;
 
-//END NEW
-
-const float SpeedFactor = 0.5;
 void init();
 void quadInit(std::unique_ptr<GPUMesh> &quad);
 void loadTexture(std::unique_ptr<RGBA8Texture> &texture, const char* filename);
@@ -58,10 +54,10 @@ std::unique_ptr<GPUMesh> quad;
 std::unique_ptr<Shader> quadShader;
 std::unique_ptr<Shader> fbShader;
 
-std::unique_ptr<RGBA8Texture> cat;
-std::unique_ptr<RGBA8Texture> stars;
+std::unique_ptr<RGBA8Texture> greg;
+std::unique_ptr<RGBA8Texture> court;
 
-std::unique_ptr<RGBA8Texture> halo;
+std::unique_ptr<RGBA8Texture> ball;
 std::unique_ptr<RGBA8Texture> speech;
 
 
@@ -108,9 +104,6 @@ int main(int, char**){
     });
     window.set_title("Assignment 3");
     window.set_size(width, height);
-
-
-    //NEW STUFF FROM MOUSE_FRAMEBUFFER
 
     /// Selection shader
     selectionShader = std::unique_ptr<Shader>(new Shader());
@@ -206,10 +199,6 @@ int main(int, char**){
         }
     });
 
-    //END OF NEW STUFF
-
-
-
     return app.run();
 }
 
@@ -230,9 +219,9 @@ void init(){
 
     quadInit(quad);
 
-    loadTexture(cat, "greg.png");
-    loadTexture(stars, "court.png");
-    loadTexture(halo, "basketball.png");
+    loadTexture(greg, "greg.png");
+    loadTexture(court, "court.png");
+    loadTexture(ball, "basketball.png");
     loadTexture(speech, "speech.png");
 
     //NEW
@@ -316,47 +305,17 @@ void drawScene(float timeCount)
     // Make texture unit 0 active
     glActiveTexture(GL_TEXTURE0);
     // Bind the texture to the active unit for drawing
-    stars->bind();
-    // Set the shader's texture uniform to the index of the texture unit we have
-    // bound the texture to
+    court->bind();
+    // Set the shader's texture uniform to the index of the texture unit we have bound the texture to
     quadShader->set_uniform("tex", 0);
     quad->set_attributes(*quadShader);
     quad->draw();
-    stars->unbind();
+    court->unbind();
 
-//    Circle
-//    float xcord = 0.7*std::cos(t);
-//    float ycord = 0.7*std::sin(t);
-
-//    line
-        t = fmod(t,1.0f);
-    //float xcord = -0.7*t+1;
-    //float ycord = -0.7*t+1;
-
+    //Restrict the time to between 0 and 1
+    t = fmod(t,1.0f);
 
     // Control points for Bezier curve
-    // Later these will be in a vector so they can be altered by the user
-//    Vec2 P0 = Vec2(1.0f, 1.0f);
-//    Vec2 P1 = Vec2(-0.5f, 0.5f);
-//    Vec2 P2 = Vec2(0.5f, 0.5f);
-//    Vec2 P3 = Vec2(-1.0f, -1.0f);
-
-
-    // Linear Bezier Curve B(t) = (1-t)p0 + tp1
-    //float xcord = P0(0) + t*(P1(0) - P0(0));
-    //float ycord = P0(1) + t*(P1(1) - P0(1));
-
-
-    // Quadratic Bezier Curve B(t) = (1-t)[(1-t)P0 + tP1] + t[(1-t)P1 + tP2]
-    //float xcord = (1-t)*((1-t)*P0(0) + t*P1(0)) + t*((1-t)*P1(0) + t*P2(0));
-    //float ycord = (1-t)*((1-t)*P0(1) + t*P1(1)) + t*((1-t)*P1(1) + t*P2(1));
-
-    // Cubic Bezier Curve B(t) = (1-t)^3P0 + 3(1-t)^2tP1 + 3(1-t)t^2P2 + t^3P3
-    //float xcord = (1-t)*(1-t)*(1-t)*P0(0) + 3.0f*(1-t)*(1-t)*t*P1(0) + 3.0f*(1-t)*t*P2(0) + t*P3(0);
-    //float ycord = (1-t)*(1-t)*(1-t)*P0(1) + 3.0f*(1-t)*(1-t)*t*P1(1) + 3.0f*(1-t)*t*P2(1) + t*P3(1);
-
-    // Cubic Bezier Curve B(t) = (1-t)^3P0 + 3(1-t)^2tP1 + 3(1-t)t^2P2 + t^3P3
-
     Vec2 P0 = controlPoints[0];
     Vec2 P1 = controlPoints[1];
     Vec2 P2 = controlPoints[2];
@@ -364,38 +323,27 @@ void drawScene(float timeCount)
     Vec2 P4 = controlPoints[4];
     Vec2 P5 = controlPoints[5];
 
-//    float xcord = (1-t)*(1-t)*(1-t)*P0(0) + 3.0f*(1-t)*(1-t)*t*P1(0) + 3.0f*(1-t)*t*P2(0) + t*P3(0);
-//    float ycord = (1-t)*(1-t)*(1-t)*P0(1) + 3.0f*(1-t)*(1-t)*t*P1(1) + 3.0f*(1-t)*t*P2(1) + t*P3(1);
+    //Calculate Greg's posistion
+    Vec2 pos = pow((1-t), 5.0f)*P0
+                + 5.0f*t*pow((1-t), 4.0f)*P1
+                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2
+                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3
+                + 5.0f*pow(t, 4.0f)*(1-t)*P4
+                + pow(t, 5.0f)*P5;
 
-    float xcord = pow((1-t), 5.0f)*P0(0)
-                + 5.0f*t*pow((1-t), 4.0f)*P1(0)
-                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2(0)
-                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3(0)
-                + 5.0f*pow(t, 4.0f)*(1-t)*P4(0)
-                + pow(t, 5.0f)*P5(0);
-    float ycord = pow((1-t), 5.0f)*P0(1)
-                + 5.0f*t*pow((1-t), 4.0f)*P1(1)
-                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2(1)
-                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3(1)
-                + 5.0f*pow(t, 4.0f)*(1-t)*P4(1)
-                + pow(t, 5.0f)*P5(1);
-
-    TRS *= Eigen::Translation3f(xcord, ycord, 0);
-    //TRS *= Eigen::AngleAxisf(t + M_PI / 2, Eigen::Vector3f::UnitZ());
-    TRS *= Eigen::AlignedScaling3f(0.2f, 0.2f, 1);
-
+    TRS *= Eigen::Translation3f(pos(0), pos(1), 0);
+    TRS *= Eigen::AlignedScaling3f(t*0.5f, t*0.5f, 1);
     quadShader->bind();
     quadShader->set_uniform("M", TRS.matrix());
     // Make texture unit 0 active
     glActiveTexture(GL_TEXTURE0);
     // Bind the texture to the active unit for drawing
-    cat->bind();
-    // Set the shader's texture uniform to the index of the texture unit we have
-    // bound the texture to
+    greg->bind();
+    // Set the shader's texture uniform to the index of the texture unit we have bound the texture to
     quadShader->set_uniform("tex", 0);
     quad->set_attributes(*quadShader);
     quad->draw();
-    cat->unbind();
+    greg->unbind();
 
     TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
     quadShader->bind();
@@ -404,8 +352,7 @@ void drawScene(float timeCount)
     glActiveTexture(GL_TEXTURE0);
     // Bind the texture to the active unit for drawing
     speech->bind();
-    // Set the shader's texture uniform to the index of the texture unit we have
-    // bound the texture to
+    // Set the shader's texture uniform to the index of the texture unit we have bound the texture to
     quadShader->set_uniform("tex", 0);
     quad->set_attributes(*quadShader);
     quad->draw();
@@ -413,27 +360,25 @@ void drawScene(float timeCount)
 
     TRS *= Eigen::Translation3f(-1.0, -1.0, 0.0);
 
-    // Make the moon orbit around the earth with 0.2 units of distance
+    // Make the ball orbit around Greg
     TRS *= Eigen::AngleAxisf(t/(0.25/4.0), Eigen::Vector3f::UnitZ());
     TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
-    // Make the moon spining according to MOON_ROT_PERIOD
+    // Make the ball spin
     TRS *= Eigen::AngleAxisf(-t/(0.25/4.0), -Eigen::Vector3f::UnitZ());
-    // Make the picture of moon smaller!
+    // Make the ball smaller
     TRS *= Eigen::AlignedScaling3f(0.5f, 0.5f, 1);
 
-    //make another thing rotate the cat
     quadShader->bind();
     // Make texture unit 0 active
     quadShader->set_uniform("M", TRS.matrix());
     glActiveTexture(GL_TEXTURE0);
     // Bind the texture to the active unit for drawing
-    halo->bind();
-    // Set the shader's texture uniform to the index of the texture unit we have
-    // bound the texture to
+    ball->bind();
+    // Set the shader's texture uniform to the index of the texture unit we have bound the texture to
     quadShader->set_uniform("tex", 0);
     quad->set_attributes(*quadShader);
     quad->draw();
-    halo->unbind();
+    ball->unbind();
 
     quadShader->unbind();
 
