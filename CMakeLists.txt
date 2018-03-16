@@ -23,3 +23,5 @@ add_subdirectory(mouse_framebuffer)
 add_subdirectory(assignment3)
 
 #add_subdirectory(assignment2)
+add_subdirectory(assignment4)
+add_subdirectory(vertex_displacement)
