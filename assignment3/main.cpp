@@ -3,10 +3,11 @@
 
 using namespace OpenGP;
 
-const int width=720, height=720;
 typedef Eigen::Transform<float,3,Eigen::Affine> Transform;
+
 #define POINTSIZE 10.0f
 const float SpeedFactor = 0.5;
+const int width=720, height=720;
 
 const char* fb_vshader =
 #include "fb_vshader.glsl"
@@ -20,7 +21,6 @@ const char* quad_vshader =
 const char* quad_fshader =
 #include "quad_fshader.glsl"
 ;
-
 const char* line_vshader =
 #include "line_vshader.glsl"
 ;
@@ -56,10 +56,8 @@ std::unique_ptr<Shader> fbShader;
 
 std::unique_ptr<RGBA8Texture> greg;
 std::unique_ptr<RGBA8Texture> court;
-
 std::unique_ptr<RGBA8Texture> ball;
 std::unique_ptr<RGBA8Texture> speech;
-
 
 //Declare Framebuffer and color buffer texture
 std::unique_ptr<Framebuffer> fb;
@@ -292,6 +290,26 @@ void loadTexture(std::unique_ptr<RGBA8Texture> &texture, const char *filename) {
     texture->upload_raw(width, height, &image[0]);
 }
 
+//Returns a vec2 with the location along the bezier curve
+Vec2 bezier(float t) {
+    // Control points for Bezier curve
+    Vec2 P0 = controlPoints[0];
+    Vec2 P1 = controlPoints[1];
+    Vec2 P2 = controlPoints[2];
+    Vec2 P3 = controlPoints[3];
+    Vec2 P4 = controlPoints[4];
+    Vec2 P5 = controlPoints[5];
+
+    //Calculate Greg's posistion based on the Bezier Curve
+    Vec2 pos = pow((1-t), 5.0f)*P0
+                + 5.0f*t*pow((1-t), 4.0f)*P1
+                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2
+                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3
+                + 5.0f*pow(t, 4.0f)*(1-t)*P4
+                + pow(t, 5.0f)*P5;
+    return pos;
+}
+
 void drawScene(float timeCount) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -314,21 +332,8 @@ void drawScene(float timeCount) {
     //Restrict the time to between 0 and 1
     t = fmod(t,1.0f);
 
-    // Control points for Bezier curve
-    Vec2 P0 = controlPoints[0];
-    Vec2 P1 = controlPoints[1];
-    Vec2 P2 = controlPoints[2];
-    Vec2 P3 = controlPoints[3];
-    Vec2 P4 = controlPoints[4];
-    Vec2 P5 = controlPoints[5];
-
-    //Calculate Greg's posistion based on the Bezier Curve
-    Vec2 pos = pow((1-t), 5.0f)*P0
-                + 5.0f*t*pow((1-t), 4.0f)*P1
-                + 10.0f*pow(t, 2.0f)*pow((1-t), 3.0f)*P2
-                + 10.0f*pow(t, 3.0f)*pow((1-t), 2.0f)*P3
-                + 5.0f*pow(t, 4.0f)*(1-t)*P4
-                + pow(t, 5.0f)*P5;
+    //Calculate Greg's posistion
+    Vec2 pos = bezier(t);
 
     //Setup translation and scaling
     TRS *= Eigen::Translation3f(pos(0), pos(1), 0);
@@ -367,7 +372,7 @@ void drawScene(float timeCount) {
     TRS *= Eigen::Translation3f(1.0, 1.0, 0.0);
     // Make the ball spin
     TRS *= Eigen::AngleAxisf(-t/(0.25/4.0), -Eigen::Vector3f::UnitZ());
-    // Make the ball smaller
+    // Scale the ball down
     TRS *= Eigen::AlignedScaling3f(0.5f, 0.5f, 1);
 
     quadShader->bind();
