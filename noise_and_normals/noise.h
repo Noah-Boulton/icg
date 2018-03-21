@@ -7,7 +7,8 @@ using namespace OpenGP;
 
 inline float lerp(float x, float y, float t) {
     /// TODO: Implement linear interpolation between x and y
-    return 0.0f;
+    //return (1.0f - t) * x + t * y;
+    return x + t*(y-x);
 }
 
 inline float fade(float t) {
@@ -85,17 +86,17 @@ float* perlin2D(const int width, const int height, const int period) {
             Vec2 d(dx-1,    1 - dy); // bottomright
 
             ///TODO: Get scalars at corners HINT: take dot product of gradient and corresponding direction
-            float s = 0;
-            float t = 0;
-            float u = 0;
-            float v = 0;
+            float s = topleft.dot(a);
+            float t = topright.dot(b);
+            float u = bottomleft.dot(c);
+            float v = bottomright.dot(d);
 
             ///TODO: Interpolate along "x" HINT: use fade(dx) as t
-            float st = 0;
-            float uv = 0;
+            float st = lerp(s, t, fade(dx));
+            float uv = lerp(u, v, fade(dx));
 
             ///TODO: Interpolate along "y"
-            float noise = 0;
+            float noise = lerp(st, uv, fade(dy));
 
             perlin_data[i+j*height] = noise;
         }
