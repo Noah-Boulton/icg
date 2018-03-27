@@ -7,7 +7,7 @@ using namespace OpenGP;
 
 inline float lerp(float x, float y, float t) {
     /// TODO: Implement linear interpolation between x and y
-    return (1.0f - t) * x + t * y;
+    return x + t*(y-x);
 }
 
 inline float fade(float t) {
@@ -38,7 +38,7 @@ R32FTexture* fBm2DTexture() {
     float *noise_data = new float[width*height];
     for (int i = 0; i < width; ++ i) {
         for (int j = 0; j < height; ++ j) {
-            noise_data[i+j*height] = 0;
+            noise_data[i+j*height] = 0.0f;
         }
     }
 
@@ -48,22 +48,92 @@ R32FTexture* fBm2DTexture() {
     for (int i = 0; i < octaves; ++i) {
         /// TODO: Implement this step according to Musgraves paper on fBM
         exponent_array[i] = pow( f, -H);
-        //exponent_array[i] = pow( f, -H*i);
         f *= lacunarity;
     }
 
-    for (int i = 0; i < width; ++ i) {
-        for (int j = 0; j < height; ++ j) {
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
             int I = i;
             int J = j;
             for(int k = 0; k < octaves; ++k) {
                 /// TODO: Get perlin noise at I,J, add offset, multiply by proper term and add to noise_data
-                noise_data[i+j*height] += (perlin_data[I+J] + offset) * exponent_array[k];
+                noise_data[i+j*height] += (perlin_data[(I%width)+(J%height)*height] + offset) * exponent_array[k];
 
                 ///--- Point to sample at next octave
                 I *= (int) lacunarity;
                 J *= (int) lacunarity;
             }
+        }
+    }
+
+    R32FTexture* _tex = new R32FTexture();
+    _tex->upload_raw(width, height, noise_data);
+//    _tex->upload_raw(width, height, perlin_data);
+
+    delete perlin_data;
+    delete noise_data;
+    delete exponent_array;
+
+    return _tex;
+}
+
+/// Generates a heightmap using fractional brownian motion
+R32FTexture* HybridMultifractal2DTexture() {
+
+    ///--- Precompute perlin noise on a 2D grid
+    const int width = 512;
+    const int height = 512;
+    float *perlin_data = perlin2D(width, height, 128);
+
+    ///--- fBm parameters
+    float H = 0.8f;
+    float lacunarity = 2.0f;
+    float offset = 0.1f;
+    const int octaves = 4;
+
+    ///--- Initialize to 0s
+    float *noise_data = new float[width*height];
+    for (int i = 0; i < width; ++ i) {
+        for (int j = 0; j < height; ++ j) {
+            noise_data[i+j*height] = 0.0f;
+        }
+    }
+
+    ///--- Precompute exponent array
+    float *exponent_array = new float[octaves];
+    float f = 1.0f;
+    for (int i = 0; i < octaves; ++i) {
+        /// TODO: Implement this step according to Musgraves paper on fBM
+        exponent_array[i] = pow( f, -H);
+        f *= lacunarity;
+    }
+
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            int I = i;
+            int J = j;
+            //Hybrid
+            float result = ( perlin_data[(I%width)+(J%height)*height] + offset ) * exponent_array[0];
+            float weight = result;
+            /* increase frequency */
+            I *= lacunarity;
+            J *= lacunarity;
+            /* spectral construction inner loop, where the fractal is built */
+            for (int k=1; k<octaves; k++) {
+                /* prevent divergence */
+                if ( weight > 1.0 ) weight = 1.0;
+                /* get next higher frequency */
+                float signal = ( 1 - abs(perlin_data[(I%width)+(J%height)*height])) * exponent_array[k];
+                /* add it in, weighted by previous freq's local value */
+                result += weight * signal;
+                /* update the (monotonically decreasing) weighting value */
+                /* (this is why H must specify a high fractal dimension) */
+                weight *= signal;
+                /* increase frequency */
+                I *= lacunarity;
+                J *= lacunarity;
+            }
+            noise_data[i+j*height] = result;
         }
     }
 
@@ -131,14 +201,10 @@ float* perlin2D(const int width, const int height, const int period) {
             float v = bottomright.dot(d);
 
             ///TODO: Interpolate along "x" HINT: use fade(dx) as t
-//            float st = (1.0f - fade(dx)) * s + fade(dx) * t;
-//            float uv = (1.0f - fade(dx)) * u + fade(dx) * v;
-
             float st = lerp(s, t, fade(dx));
             float uv = lerp(u, v, fade(dx));
 
             ///TODO: Interpolate along "y"
-//            float noise = (1.0f - fade(dy)) * st + fade(dy) * uv;
             float noise = lerp(st, uv, fade(dy));
 
             perlin_data[i+j*height] = noise;

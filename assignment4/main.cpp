@@ -100,31 +100,32 @@ int main(int, char**){
 
     window.add_listener<KeyEvent>([&](const KeyEvent &k){
         ///--- TODO: Implement WASD keys HINT: compare k.key to GLFW_KEY_W
-//        if(k.key == GLFW_KEY_W){
-//            cameraPos += cameraFront;
-//        }
-//        if(k.key == GLFW_KEY_A){
-//            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
-//        }
-//        if(k.key == GLFW_KEY_S){
-//            cameraPos -= cameraFront;
-//        }
-//        if(k.key == GLFW_KEY_D){
-//            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
-//        }
-
         if(k.key == GLFW_KEY_W){
-            cameraPos += cameraFront * 0.05f;
+            cameraPos += cameraFront;
         }
         if(k.key == GLFW_KEY_A){
-            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
         }
         if(k.key == GLFW_KEY_S){
-            cameraPos -= cameraFront * 0.05f;
+            cameraPos -= cameraFront;
         }
         if(k.key == GLFW_KEY_D){
-            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
         }
+
+
+//        if(k.key == GLFW_KEY_W){
+//            cameraPos += cameraFront * 0.05f;
+//        }
+//        if(k.key == GLFW_KEY_A){
+//            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+//        }
+//        if(k.key == GLFW_KEY_S){
+//            cameraPos -= cameraFront * 0.05f;
+//        }
+//        if(k.key == GLFW_KEY_D){
+//            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+//        }
     });
 
     return app.run();
@@ -147,7 +148,8 @@ void init(){
     terrainShader->link();
 
     ///--- Get height texture
-    heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
+    //heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
+    heightTexture = std::unique_ptr<R32FTexture>(HybridMultifractal2DTexture());
 
     ///--- Load terrain and cubemap textures
     const std::string list[] = {"grass", "rock", "sand", "snow", "water"};
@@ -197,6 +199,7 @@ void genTerrainMesh() {
             float x = (i/(float)n_width)*f_width;
             float y = (j/(float)n_height)*f_height;
             float z = cameraPos(2) - 0.2f;
+//            float z = 0.0f;
             points.push_back(Vec3(x, y, z));
             texCoords.push_back( Vec2( i/(float)(n_width-1), j/(float)(n_height-1)) );
         }
@@ -279,7 +282,7 @@ void drawTerrain() {
     //Mat4x4 P = Mat4x4::Identity(); /// AND HERE
     float ratio = float(width) / float(height);
     //Mat4x4 P = perspective(80.0f, width/(float)height, 0.1f, 60.0f);
-    Mat4x4 P = perspective(80.0f, ratio, 0.01f, 10.0f);
+    Mat4x4 P = perspective(80.0f, width/(float)height, 0.1f, 60.0f);
     // P = perspective(60, ratio, 0.1, 50);
     terrainShader->set_uniform("P", P);
 

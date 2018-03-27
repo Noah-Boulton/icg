@@ -14,11 +14,9 @@ out vec3 fragPos;
 
 void main() {
     /// TODO: Get height h at uv
-
-
     uv = vtexcoord;
-    float h = texture(noiseTex, uv).r;
-    fragPos = vposition.xyz + vec3(0,0,h);
+    float h = texture(noiseTex, vtexcoord).r;
+    fragPos = vposition + vec3(0,0,h);
     gl_Position = P*V*M*vec4(fragPos, 1.0);
 }
 )"

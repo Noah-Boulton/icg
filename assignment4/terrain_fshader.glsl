@@ -34,6 +34,8 @@ void main() {
     vec3 D = vec3(uv.x, uv.y -1.0/size.y, textureOffset(noiseTex, uv, ivec2(0,-1)));
     vec3 N = normalize( cross(normalize(A-B), normalize(C-D)) );
 
+    //Use normal to find the slope
+
     /// TODO: Texture according to height and slope
     /// HINT: Read noiseTex for height at uv
 
@@ -42,25 +44,31 @@ void main() {
 
     //color = vec4(0,0,0,1);
     //please: (make) mountains*30;
-    vec4 colour = vec4(0,0,0,0);
+    vec3 colour = vec3(0,0,0);
     if(fragPos.z > 3.3f){
-	colour = texture(snow, uv).rgba;
+	colour = texture(snow, uv).rgb;
     } else if(fragPos.z < 2.7f){
-	colour = texture(water, uv).rgba;
+	colour = texture(water, uv).rgb;
     } else{
-	colour = texture(rock, uv).rgba;
+	colour = texture(rock, uv).rgb;
     }
 
     vec3 light_color = vec3(1.0, 0.9, 0.8);
 
     float d_weight = max(-dot(lightDir, N), 0);
-    float s_weight = pow(max(dot(reflect(viewPos, N), lightDir), 0),
-			 1.0f);
+//    float s_weight = pow(max(dot(reflect(viewPos, N), light_dir), 0), specular_power);
+    float s_weight = pow(max(dot(reflect(viewPos, N), light_dir), 0), 1000.0f);
 
-    vec3 illumination = 0.2f * colour.xyz
-		      + d_weight * light_color * colour.xyz
-		      + s_weight * light_color * 1.0f;
 
-    color = vec4(illumination, 1);
+//    vec3 illumination = ambient_light * bunny_color + d_weight * light_color * bunny_color + s_weight * light_color * bunny_specular;
+    vec3 illumination = 0.2f * colour + d_weight * light_color * colour + s_weight * light_color * 100.0f;
+
+    float angle = dot(N, vec3(0,1,0));
+
+    if(abs(angle) > 0.85 && fragPos.z > 3.3f){
+	colour = texture(rock, uv).rgb;
+    }
+
+    color = vec4(colour, 1);
 }
 )"
