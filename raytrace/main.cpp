@@ -262,7 +262,7 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
 
         if(diffuse > 0.0f){ // Specular is added only if the diffuse is greater than 0
                 colour += 0.5f*std::powf((std::max(0.0f, specular)), specCof)*spec*lightInt;
-            }
+        }
     }
 
     if(reflective == 0.0f){

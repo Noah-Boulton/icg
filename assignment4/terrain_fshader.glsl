@@ -17,8 +17,7 @@ in vec3 fragPos;
 
 out vec4 color;
 
-void main() {
-
+void main() {  
     // Directional light source
     vec3 lightDir = normalize(vec3(1,1,1));
 
@@ -43,32 +42,50 @@ void main() {
     /// HINT: max(,) dot(,) reflect(,) normalize()
 
     //color = vec4(0,0,0,1);
-    //please: (make) mountains*30;
+    float specular_power;
+    float specular_colour;
+    float ambient_light = 0.5f;
     vec3 colour = vec3(0,0,0);
-    if(fragPos.z > 3.3f){
+    float snow_line = 0.65f;
+    float tree_line = 0.5f;
+    if(fragPos.z > snow_line){
 	colour = texture(snow, uv).rgb;
-    } else if(fragPos.z < 2.7f){
-	colour = texture(water, uv).rgb;
-    } else{
+	specular_power = 125.0f;
+    } else if (fragPos.z > tree_line){
 	colour = texture(rock, uv).rgb;
+	specular_power = 10.0f;
+    }else if(fragPos.z <= 0.0f){
+	colour = texture(water, uv).rgb;
+	specular_power = 500.0f;
+	//vec3 normal_col = normalize(abs((2.0f*colour)-1.0f));
+    } else{
+	colour = texture(grass, uv).rgb;
+	specular_power = 10.0f;
     }
-
-    vec3 light_color = vec3(1.0, 0.9, 0.8);
-
-    float d_weight = max(-dot(lightDir, N), 0);
-//    float s_weight = pow(max(dot(reflect(viewPos, N), light_dir), 0), specular_power);
-    float s_weight = pow(max(dot(reflect(viewPos, N), light_dir), 0), 1000.0f);
-
-
-//    vec3 illumination = ambient_light * bunny_color + d_weight * light_color * bunny_color + s_weight * light_color * bunny_specular;
-    vec3 illumination = 0.2f * colour + d_weight * light_color * colour + s_weight * light_color * 100.0f;
 
     float angle = dot(N, vec3(0,1,0));
 
-    if(abs(angle) > 0.85 && fragPos.z > 3.3f){
+    if(abs(angle) > 0.95f && fragPos.z > snow_line){
 	colour = texture(rock, uv).rgb;
+	specular_power = 10.0f;
     }
 
-    color = vec4(colour, 1);
+    vec3 light_color = vec3(0.8, 0.9, 0.9);
+    float d_weight = max(-dot(lightDir, N), 0);
+    float s_weight = pow(max(dot(normalize(reflect(viewPos, N)), lightDir), 0), specular_power);
+
+    vec3 ambient = colour * ambient_light;
+    vec3 diffuse = d_weight * light_color * colour;
+    vec3 specular = s_weight * light_color * colour;
+
+    //vec3 illumination = colour * (ambient_light + d_weight + s_weight);
+
+    vec3 illumination;
+    if(d_weight > 0.0f){
+	illumination = ambient + diffuse + specular;
+    } else {
+	illumination = ambient + diffuse;
+    }
+    color = vec4(illumination, 1);
 }
 )"

@@ -52,14 +52,12 @@ int main(int, char**){
 
     init();
     cameraPos = Vec3(0,0,3);
-    cameraFront = Vec3(0,-1,0);
-    cameraUp = Vec3(0,0,1);
     genCubeMesh();
     genTerrainMesh();
 
-//    cameraPos = Vec3(0,0,3);
-//    cameraFront = Vec3(0,-1,0);
-//    cameraUp = Vec3(0,0,1);
+    cameraPos = Vec3(0,0,3);
+    cameraFront = Vec3(0,-1,0);
+    cameraUp = Vec3(0,0,1);
     yaw = 0.0f;
     pitch = 0.0f;
 
@@ -100,32 +98,31 @@ int main(int, char**){
 
     window.add_listener<KeyEvent>([&](const KeyEvent &k){
         ///--- TODO: Implement WASD keys HINT: compare k.key to GLFW_KEY_W
-        if(k.key == GLFW_KEY_W){
-            cameraPos += cameraFront;
-        }
-        if(k.key == GLFW_KEY_A){
-            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
-        }
-        if(k.key == GLFW_KEY_S){
-            cameraPos -= cameraFront;
-        }
-        if(k.key == GLFW_KEY_D){
-            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
-        }
-
-
 //        if(k.key == GLFW_KEY_W){
-//            cameraPos += cameraFront * 0.05f;
+//            cameraPos += cameraFront;
 //        }
 //        if(k.key == GLFW_KEY_A){
-//            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+//            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
 //        }
 //        if(k.key == GLFW_KEY_S){
-//            cameraPos -= cameraFront * 0.05f;
+//            cameraPos -= cameraFront;
 //        }
 //        if(k.key == GLFW_KEY_D){
-//            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.05f;
+//            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized();
 //        }
+
+        if(k.key == GLFW_KEY_W){
+            cameraPos += cameraFront * 0.1f;
+        }
+        if(k.key == GLFW_KEY_A){
+            cameraPos -= cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.1f;
+        }
+        if(k.key == GLFW_KEY_S){
+            cameraPos -= cameraFront * 0.1f;
+        }
+        if(k.key == GLFW_KEY_D){
+            cameraPos += cameraFront.cross(Vec3(0.0f, 0.0f, 1.0f)).normalized() * 0.1f;
+        }
     });
 
     return app.run();
@@ -195,11 +192,9 @@ void genTerrainMesh() {
     for(int j=0; j<n_height; ++j) {
         for(int i=0; i<n_width; ++i) {
             /// TODO: calculate vertex positions, texture indices done for you
-            //points.push_back(Vec3(i, j, 0.0f));
             float x = (i/(float)n_width)*f_width;
             float y = (j/(float)n_height)*f_height;
-            float z = cameraPos(2) - 0.2f;
-//            float z = 0.0f;
+            float z = 0.0f;
             points.push_back(Vec3(x, y, z));
             texCoords.push_back( Vec2( i/(float)(n_width-1), j/(float)(n_height-1)) );
         }
@@ -212,7 +207,7 @@ void genTerrainMesh() {
         indices.push_back(j*n_width);
         indices.push_back((j+1)*n_width);
         for(int i=1; i<n_width; ++i) {
-            /// TODO: push_back next two vertices HINT: Each one will generate a new triangler
+            /// TODO: push_back next two vertices HINT: Each one will generate a new triangle
             indices.push_back(j*n_width+i);
             indices.push_back((j+1)*n_width+i);
         }
@@ -272,7 +267,12 @@ void drawTerrain() {
 
     /// TODO: Create transformation matrices HINT: use lookAt and perspective
     Mat4x4 M = Mat4x4::Identity(); // Identity should be fine
-    terrainShader->set_uniform("M", M);
+    Mat4x4 TS;
+    TS << 4, 0, 0, -10,
+          0, 4, 0, -10,
+          0, 0, 4, -10,
+          0, 0, 0,  1;
+    terrainShader->set_uniform("M", TS);
 
     Vec3 look = cameraFront + cameraPos;
     Mat4x4 V = lookAt(cameraPos, look, cameraUp);

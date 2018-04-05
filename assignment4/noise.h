@@ -86,9 +86,9 @@ R32FTexture* HybridMultifractal2DTexture() {
     float *perlin_data = perlin2D(width, height, 128);
 
     ///--- fBm parameters
-    float H = 0.8f;
+    float H = 0.75f;
     float lacunarity = 2.0f;
-    float offset = 0.1f;
+    float offset = 0.7f;
     const int octaves = 4;
 
     ///--- Initialize to 0s
@@ -113,7 +113,7 @@ R32FTexture* HybridMultifractal2DTexture() {
             int I = i;
             int J = j;
             //Hybrid
-            float result = ( perlin_data[(I%width)+(J%height)*height] + offset ) * exponent_array[0];
+            float result = ( 1 - abs(perlin_data[(I%width)+(J%height)*height] + offset) ) * exponent_array[0];
             float weight = result;
             /* increase frequency */
             I *= lacunarity;

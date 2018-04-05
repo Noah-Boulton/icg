@@ -12,7 +12,7 @@ include(common/GLEW.cmake)
 include(common/GLFW.cmake)
 
 #--- Subprojects
-#add_subdirectory(raytrace)
+add_subdirectory(raytrace)
 #add_subdirectory(rasterize)
 #add_subdirectory(trianglemesh)
 #add_subdirectory(transform)
@@ -24,5 +24,5 @@ add_subdirectory(vertex_displacement)
 add_subdirectory(noise_and_normals)
 
 #add_subdirectory(assignment2)
-add_subdirectory(assignment3)
+#add_subdirectory(assignment3)
 add_subdirectory(assignment4)
