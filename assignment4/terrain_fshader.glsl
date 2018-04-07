@@ -41,7 +41,6 @@ void main() {
     /// TODO: Calculate ambient, diffuse, and specular lighting
     /// HINT: max(,) dot(,) reflect(,) normalize()
 
-    //color = vec4(0,0,0,1);
     float specular_power;
     float specular_colour;
     float ambient_light = 0.5f;
@@ -49,7 +48,7 @@ void main() {
     float snow_line = 0.65f;
     float tree_line = 0.5f;
     if(fragPos.z > snow_line){
-	colour = texture(snow, uv).rgb;
+       colour = texture(snow, uv).rgb;
 	specular_power = 125.0f;
     } else if (fragPos.z > tree_line){
 	colour = texture(rock, uv).rgb;
@@ -57,7 +56,6 @@ void main() {
     }else if(fragPos.z <= 0.0f){
 	colour = texture(water, uv).rgb;
 	specular_power = 500.0f;
-	//vec3 normal_col = normalize(abs((2.0f*colour)-1.0f));
     } else{
 	colour = texture(grass, uv).rgb;
 	specular_power = 10.0f;
@@ -77,8 +75,6 @@ void main() {
     vec3 ambient = colour * ambient_light;
     vec3 diffuse = d_weight * light_color * colour;
     vec3 specular = s_weight * light_color * colour;
-
-    //vec3 illumination = colour * (ambient_light + d_weight + s_weight);
 
     vec3 illumination;
     if(d_weight > 0.0f){

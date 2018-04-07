@@ -51,7 +51,6 @@ int main(int, char**){
     Application app;
 
     init();
-    cameraPos = Vec3(0,0,3);
     genCubeMesh();
     genTerrainMesh();
 
@@ -145,7 +144,10 @@ void init(){
     terrainShader->link();
 
     ///--- Get height texture
+    //Regual FBM
     //heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
+
+    //Hybrid Multifractal
     heightTexture = std::unique_ptr<R32FTexture>(HybridMultifractal2DTexture());
 
     ///--- Load terrain and cubemap textures
@@ -198,7 +200,6 @@ void genTerrainMesh() {
             points.push_back(Vec3(x, y, z));
             texCoords.push_back( Vec2( i/(float)(n_width-1), j/(float)(n_height-1)) );
         }
-        //std::cout << (j/(float)n_height) << std::endl;
     }
 
     ///--- Element indices using triangle strips
@@ -252,7 +253,7 @@ void drawSkybox() {
     glActiveTexture(GL_TEXTURE0);
     glEnable(GL_TEXTURE_CUBE_MAP);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-    skyboxShader->bind();
+
     /// TODO: Set atrributes, draw cube using GL_TRIANGLE_STRIP mode
     glEnable(GL_DEPTH_TEST);
     skyboxMesh->set_attributes(*skyboxShader);
@@ -276,14 +277,10 @@ void drawTerrain() {
 
     Vec3 look = cameraFront + cameraPos;
     Mat4x4 V = lookAt(cameraPos, look, cameraUp);
-    //Mat4x4 V = lookAt(Vec3(0.5,0,0.5), Vec3(0.5,0.5,0), Vec3(0,0,1));
     terrainShader->set_uniform("V", V);
 
-    //Mat4x4 P = Mat4x4::Identity(); /// AND HERE
     float ratio = float(width) / float(height);
-    //Mat4x4 P = perspective(80.0f, width/(float)height, 0.1f, 60.0f);
     Mat4x4 P = perspective(80.0f, width/(float)height, 0.1f, 60.0f);
-    // P = perspective(60, ratio, 0.1, 50);
     terrainShader->set_uniform("P", P);
 
     terrainShader->set_uniform("viewPos", cameraPos);
