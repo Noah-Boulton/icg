@@ -17,7 +17,7 @@ in vec3 fragPos;
 
 out vec4 color;
 
-void main() {  
+void main() {
     // Directional light source
     vec3 lightDir = normalize(vec3(1,1,1));
 

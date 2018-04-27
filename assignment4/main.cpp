@@ -144,7 +144,7 @@ void init(){
     terrainShader->link();
 
     ///--- Get height texture
-    //Regual FBM
+    //Regular FBM
     //heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
 
     //Hybrid Multifractal

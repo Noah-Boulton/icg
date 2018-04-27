@@ -1,5 +1,8 @@
 #include "OpenGP/Image/Image.h"
 #include "bmpwrite.h"
+#include "shape.h"
+#include "sphere.h"
+#include "plane.h"
 
 using namespace OpenGP;
 using Colour = Vec3; // RGB Value
@@ -11,35 +14,15 @@ Colour grey() { return Colour(0.5f, 0.5f, 0.5f); }
 Colour blue() { return Colour(0.0f, 0.0f, 1.0f); }
 Colour silver() { return Colour(0.753f, 0.753f, 0.753f); }
 
-struct sphere{
-    Vec3 center;
-    float radius;
-    Colour colour;
-    bool mirror;
-    bool glass;
-    Colour spec;
-    Vec3 ambientCol;
-    float specCof;
-    float reflective;
-};
-
-struct plane{
-    Vec3 center;
-    Vec3 normal;
-    Colour colour;
-    Colour spec;
-    Vec3 ambientCol;
-    float specCof;
-    float reflective;
-};
+int ray_count = 0;
 
 Colour trace(Vec3 &ray, sphere sheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 lightPos[], float lightInt, int depth, float ambient, int numLights);
 bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 &lightPos, int index);
 void setup(sphere spheres[], int numSpheres, plane planes[], int numPlanes);
 
 int main(int, char**){
-    int wResolution = 640;
-    int hResolution = 480;
+    int wResolution = 1080;
+    int hResolution = 720;
     float aspectRatio = float(wResolution) / float(hResolution); // Corrects for the screen size
     Image<Colour> image(hResolution, wResolution);
 
@@ -82,6 +65,7 @@ int main(int, char**){
             image(row, col) = trace(ray, spheres, numSpheres, planes, numPlanes, camera, lightPos, lightInt, 1, ambient, numLights);
         }
     }
+    std::cout<<ray_count<<std::endl;
     bmpwrite("../../out.bmp", image);
     imshow(image);
     return EXIT_SUCCESS;
@@ -103,6 +87,7 @@ int main(int, char**){
  * @return - the colour of the ray
  */
 Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 lightPos[], float lightInt, int depth, float ambient, int numLights){
+    ray_count++;
     if(depth > 5){  // Limit the depth to avoid non-terminating recursive calls
         return black();
     }
@@ -113,9 +98,9 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
     for(int i = 0; i < numSpheres; i++){
         float t = INFINITY;
         //ray-sphere intersection
-        Vec3 originSubC = origin - spheres[i].center; // camera - sphere center
+        Vec3 originSubC = origin - spheres[i].get_center(); // camera - sphere center
         // calculate the discriminet to see if the ray hits the sphere
-        float disc = std::powf(ray.dot(originSubC), 2) - originSubC.dot(originSubC) + spheres[i].radius*spheres[i].radius;
+        float disc = std::powf(ray.dot(originSubC), 2) - originSubC.dot(originSubC) + spheres[i].get_radius()*spheres[i].get_radius();
 
         if(disc >= 0){
             // Hits the sphere
@@ -130,8 +115,8 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
     // Ray plane intersection
     for(int i = 0; i < numPlanes; i++){
         float t = INFINITY;
-        if((planes[i].center - origin).dot(planes[i].normal) != 0){
-            t = ((planes[i].center - origin).dot(planes[i].normal))/(ray.dot(planes[i].normal));
+        if((planes[i].get_center() - origin).dot(planes[i].get_normal()) != 0){
+            t = ((planes[i].get_center() - origin).dot(planes[i].get_normal()))/(ray.dot(planes[i].get_normal()));
             if(t > 0.0001f){
                 // intersects in front of camera
                 if(t < time){
@@ -165,8 +150,8 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
 
     if(index < numSpheres){
         //ambient
-        shade = spheres[index].colour;
-        Vec3 ambientCol = spheres[index].ambientCol;
+        shade = spheres[index].get_colour();
+        Vec3 ambientCol = spheres[index].get_ambientCol();
         colour = ambient*ambientCol*lightInt;
 
         if(shadowCount>0){
@@ -174,18 +159,18 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
             return colour + colour*(numLights - shadowCount);
         }
 
-        normal = (hitPos - spheres[index].center)/spheres[index].radius;
-        spec = spheres[index].spec;
-        specCof = spheres[index].specCof;
-        reflective = spheres[index].reflective;
+        normal = (hitPos - spheres[index].get_center())/spheres[index].get_radius();
+        spec = spheres[index].get_spec();
+        specCof = spheres[index].get_specCof();
+        reflective = spheres[index].get_reflective();
 
-        if(spheres[index].mirror){ // Mirror reflection
+        if(spheres[index].get_mirror()){ // Mirror reflection
             Vec3 R = ray - 2.0f*(ray.dot(normal)*normal);
             R = R.normalized();
             shade += trace(R, spheres, numSpheres, planes, numPlanes, hitPos, lightPos, lightInt, depth+1, ambient, numLights);
         }
 
-        if(spheres[index].glass){ // Glass refraction
+        if(spheres[index].get_glass()){ // Glass refraction
             Vec3 norm = normal;
             Vec3 incident = ray;
             float angle1 = (-1.0f*norm.dot(incident));
@@ -199,15 +184,15 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
             refract = refract.normalized();
 
             hitPos = hitPos + refract*0.00001f; // move the hit posistion forward to avoid hitting the same location on the object
-            Vec3 hitPosSubC = hitPos - spheres[index].center;
-            float disc = std::powf(refract.dot(hitPosSubC), 2) - hitPosSubC.dot(hitPosSubC) + spheres[index].radius*spheres[index].radius;
+            Vec3 hitPosSubC = hitPos - spheres[index].get_center();
+            float disc = std::powf(refract.dot(hitPosSubC), 2) - hitPosSubC.dot(hitPosSubC) + spheres[index].get_radius()*spheres[index].get_radius();
             if(disc < 0){
                 return black();
             }
 
             float t = -(refract.dot(hitPosSubC)) - std::sqrtf(disc);
             Vec3 hitPos2 = hitPos + refract*t;
-            norm = (spheres[index].center - hitPos2)/spheres[index].radius;
+            norm = (spheres[index].get_center() - hitPos2)/spheres[index].get_radius();
 
             angle1 = (norm.dot(refract));
             if(angle1 < 0){
@@ -231,8 +216,8 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
 
     } else if(index >= numSpheres){
         //ambient
-        Vec3 ambientCol = planes[index - numSpheres].ambientCol;
-        shade = planes[index - numSpheres].colour;
+        Vec3 ambientCol = planes[index - numSpheres].get_ambientCol();
+        shade = planes[index - numSpheres].get_colour();
         colour = ambient*ambientCol*lightInt;
 
         if(shadowCount>0){
@@ -240,10 +225,10 @@ Colour trace(Vec3 &ray, sphere spheres[], int numSpheres, plane planes[], int nu
             return colour + colour*(numLights - shadowCount);
         }
 
-        normal = planes[0].normal;
-        spec = planes[index + numSpheres].spec;
-        specCof = planes[index - numSpheres].specCof;
-        reflective = planes[index -numSpheres].reflective;
+        normal = planes[0].get_normal();
+        spec = planes[index + numSpheres].get_spec();
+        specCof = planes[index - numSpheres].get_specCof();
+        reflective = planes[index -numSpheres].get_reflective();
     }
 
     for(int i = 0; i < numLights; i++){
@@ -305,9 +290,9 @@ bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, V
         float t = INFINITY;
         //ray-sphere intersection
         /// TODO: ray sphere intersection and shading
-        Vec3 originSubC = origin - spheres[i].center; // camera - sphere center
+        Vec3 originSubC = origin - spheres[i].get_center(); // camera - sphere center
         // calculate the discriminet to see if the ray hits the sphere
-        float disc = std::powf(lightDir.dot(originSubC), 2) - originSubC.dot(originSubC) + spheres[i].radius*spheres[i].radius;
+        float disc = std::powf(lightDir.dot(originSubC), 2) - originSubC.dot(originSubC) + spheres[i].get_radius()*spheres[i].get_radius();
 
         if(disc >= 0){
             // Hits the sphere
@@ -324,9 +309,9 @@ bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, V
             continue;
         }
          float t = INFINITY;
-        if((planes[i].center - origin).dot(planes[i].normal) != 0){
+        if((planes[i].get_center() - origin).dot(planes[i].get_normal()) != 0){
             // ray intersects plane
-            t = ((planes[i].center - origin).dot(planes[i].normal))/(lightDir.dot(planes[i].normal));
+            t = ((planes[i].get_center() - origin).dot(planes[i].get_normal()))/(lightDir.dot(planes[i].get_normal()));
             if(t > 0.001f){
                 // intersects in front of camera
                 if(t < time){
@@ -346,116 +331,47 @@ bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, V
  * @param numPlanes - number of planes in the scene
  */
 void setup(sphere spheres[], int numSpheres, plane planes[], int numPlanes){
-    sphere s;
-    s.center = Vec3(0.0f, 1.0f, -10.0f);
-    s.radius = 2.0f;
-    s.colour = pink();
-    s.mirror = false;
-    s.spec = grey();
-    s.ambientCol = pink();
-    s.specCof = 570.0f;
-    s.glass = false;
-    s.reflective = 0.0f;
+    sphere s = sphere(2.0f, false, false, Vec3(0.0f, 1.0f, -10.0f), pink(), grey(), pink(), 570.0f, 0.0f);
 
-    sphere s2;
-    s2.center = Vec3(4.0f, 1.0f, -5.0f);
-    s2.radius = 2.0f;
-    s2.colour = black();
-    s2.mirror = false;
-    s2.spec = white();
-    s2.ambientCol = grey();
-    s2.specCof = 600.0f;
-    s2.glass = true;
-    s2.reflective = 0.025f;
+    sphere s2 = sphere(2.0f, false, true, Vec3(4.0f, 1.0f, -5.0f), black(), white(), grey(), 600.0f, 0.025f);
 
-    sphere s3;
-    s3.center = Vec3(-4.0f, 1.0f, -5.0f);
-    s3.radius = 2.0f;
-    s3.colour = Colour(0.1f, 0.1f, 0.1f);
-    s3.mirror = true;
-    s3.spec = silver();
-    s3.ambientCol = Colour(0.1f, 0.1f, 0.1f);
-    s3.specCof = 1000.0f;
-    s3.glass = false;
-    s3.reflective = 0.0f;
+    sphere s3 = sphere(2.0f, true, false, Vec3(-4.0f, 1.0f, -5.0f), Colour(0.1f, 0.1f, 0.1f), silver(), Colour(0.1f, 0.1f, 0.1f), 1000.0f, 0.0f);
 
     // biuld the floor as a plane parallel to the camera view
     Vec3 floorNorm = Vec3(0.0f, 1.0f, 0.0f);
     floorNorm = floorNorm.normalized();
     Vec3 floorCenter = Vec3(0.0f, -4.0f, -6.0f);
-    plane floor;
-    floor.center = floorCenter;
-    floor.normal = floorNorm;
-    floor.colour = grey();
-    floor.spec = grey();
-    floor.ambientCol = grey();
-    floor.specCof = 380.0f;
-    floor.reflective = 0.1f;
+    plane floor = plane(floorCenter, floorNorm, grey(), grey(), grey(), 380.0f, 0.1f);
 
     Vec3 backNorm = Vec3(0.0f, 0.0f, 1.0f);
     backNorm = backNorm.normalized();
     Vec3 backCenter = Vec3(0.0f, 0.0f, -20.0f);
 
-    plane back;
-    back.center = backCenter;
-    back.normal = backNorm;
-    back.colour = pink();
-    back.spec = grey();
-    back.ambientCol = pink();
-    back.specCof = 1000.0f;
-    back.reflective = 0.1f;
+    plane back = plane(backCenter, backNorm, pink(), grey(), pink(), 1000.0f, 0.1f);
 
     Vec3 behindNorm = Vec3(0.0f, 0.0f, -1.0f);
     behindNorm = behindNorm.normalized();
     Vec3 behindCenter = Vec3(0.0f, 0.0f, 6.0f);
 
-    plane behind;
-    behind.center = behindCenter;
-    behind.normal = behindNorm;
-    behind.colour = pink();
-    behind.spec = grey();
-    behind.ambientCol = pink();
-    behind.specCof = 1000.0f;
-    behind.reflective = 0.1f;
+    plane behind = plane(behindCenter, behindNorm, pink(), grey(), pink(), 1000.0f, 0.1f);
 
     Vec3 ceilingNorm = Vec3(0.0f, -1.0f, 0.0f);
     ceilingNorm = ceilingNorm.normalized();
     Vec3 ceilingCenter = Vec3(0.0f, 10.0f, 0.0f);
 
-    plane ceiling;
-    ceiling.center = ceilingCenter;
-    ceiling.normal = ceilingNorm;
-    ceiling.colour = grey();
-    ceiling.spec = grey();
-    ceiling.ambientCol = grey();
-    ceiling.specCof = 1000.0f;
-    ceiling.reflective = 0.0f;
+    plane ceiling = plane(ceilingCenter, ceilingNorm, grey(), grey(), grey(), 1000.0f, 0.0f);
 
     Vec3 leftWallNorm = Vec3(1.0f, 0.0f, 0.0f);
     leftWallNorm = leftWallNorm.normalized();
     Vec3 leftWallCenter = Vec3(-10.0f, 0.0f, 0.0f);
 
-    plane leftWall;
-    leftWall.center = leftWallCenter;
-    leftWall.normal = leftWallNorm;
-    leftWall.colour = red();
-    leftWall.spec = grey();
-    leftWall.ambientCol = red();
-    leftWall.specCof = 1000.0f;
-    leftWall.reflective = 0.1f;
+    plane leftWall = plane(leftWallCenter, leftWallNorm, red(), grey(), red(), 1000.0f, 0.1f);
 
     Vec3 rightWallNorm = Vec3(-1.0f, 0.0f, 0.0f);
     rightWallNorm = rightWallNorm.normalized();
     Vec3 rightWallCenter = Vec3(10.0f, 0.0f, 0.0f);
 
-    plane rightWall;
-    rightWall.center = rightWallCenter;
-    rightWall.normal = rightWallNorm;
-    rightWall.colour = blue();
-    rightWall.spec = grey();
-    rightWall.ambientCol = blue();
-    rightWall.specCof = 1000.0f;
-    rightWall.reflective = 0.1f;
+    plane rightWall = plane(rightWallCenter, rightWallNorm, blue(), grey(), blue(), 1000.0f, 0.1f);
 
     spheres[0] = s;
     spheres[1] = s2;
