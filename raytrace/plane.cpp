@@ -17,11 +17,19 @@ plane::plane(Vec3 c, Vec3 n, Colour col, Colour s, Vec3 a, float sCof, float r){
     reflective = r;
 }
 
+float plane::intersect(Vec3 origin, Vec3 ray){
+    float time = -1.0f;
+    if((center - origin).dot(normal) != 0){
+        time = ((center - origin).dot(normal))/(ray.dot(normal));
+    }
+    return time;
+}
+
 Vec3 plane::get_center(){
     return center;
 }
 
-Vec3 plane::get_normal(){
+Vec3 plane::get_normal(Vec3 hitPos){
     return normal;
 }
 
