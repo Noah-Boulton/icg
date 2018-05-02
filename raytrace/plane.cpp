@@ -7,7 +7,7 @@ using Colour = Vec3;
 plane::plane(){
 }
 
-plane::plane(Vec3 c, Vec3 n, Colour col, Colour s, Vec3 a, float sCof, float r){
+plane::plane(Vec3 c, Vec3 n, Colour col, Colour s, Vec3 a, float sCof, float r, bool m){
     center = c;
     normal = n;
     colour = col;
@@ -15,6 +15,7 @@ plane::plane(Vec3 c, Vec3 n, Colour col, Colour s, Vec3 a, float sCof, float r){
     ambientCol = a;
     specCof = sCof;
     reflective = r;
+    mirror = m;
 }
 
 float plane::intersect(Vec3 origin, Vec3 ray){
@@ -51,4 +52,8 @@ float plane::get_specCof(){
 
 float plane::get_reflective(){
     return reflective;
+}
+
+bool plane::get_mirror(){
+    return mirror;
 }

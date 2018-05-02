@@ -16,6 +16,7 @@ public:
     virtual Vec3 get_ambientCol() = 0;
     virtual float get_specCof() = 0;
     virtual float get_reflective() = 0;
+    virtual bool get_mirror() = 0;
 };
 
 #endif // SHAPE_H

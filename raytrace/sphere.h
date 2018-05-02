@@ -24,7 +24,7 @@ public:
     virtual Colour get_spec();
     virtual float intersect(Vec3 origin, Vec3 ray);
     virtual Vec3 get_normal(Vec3 hitPos);
-    //    bool get_mirror();
+    virtual bool get_mirror();
     //    bool get_glass();
 };
 

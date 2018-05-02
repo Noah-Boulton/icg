@@ -51,9 +51,9 @@ float sphere::get_reflective(){
     return reflective;
 }
 
-//bool sphere::get_mirror(){
-//    return mirror;
-//}
+bool sphere::get_mirror(){
+    return mirror;
+}
 
 //bool sphere::get_glass(){
 //    return glass;
