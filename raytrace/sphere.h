@@ -25,7 +25,7 @@ public:
     virtual float intersect(Vec3 origin, Vec3 ray);
     virtual Vec3 get_normal(Vec3 hitPos);
     virtual bool get_mirror();
-    //    bool get_glass();
+    virtual bool get_glass();
 };
 
 #endif // SPHERE_H

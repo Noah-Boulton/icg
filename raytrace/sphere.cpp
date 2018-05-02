@@ -55,9 +55,9 @@ bool sphere::get_mirror(){
     return mirror;
 }
 
-//bool sphere::get_glass(){
-//    return glass;
-//}
+bool sphere::get_glass(){
+    return glass;
+}
 
 Colour sphere::get_colour(){
     return colour;
