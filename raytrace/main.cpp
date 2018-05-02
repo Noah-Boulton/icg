@@ -17,7 +17,7 @@ Colour silver() { return Colour(0.753f, 0.753f, 0.753f); }
 int ray_count = 0;
 
 //Colour trace(Vec3 &ray, sphere sheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 lightPos[], float lightInt, int depth, float ambient, int numLights);
-//bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 &lightPos, int index);
+bool isShadow(shape * shapes[], int numShapes, Vec3 &origin, Vec3 &lightPos, int index);
 void setup(sphere spheres[], int numSpheres, plane planes[], int numPlanes);
 Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 lightPos[], float lightInt, int depth, float ambient, int numLights);
 
@@ -90,7 +90,7 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
         return black();
     }
 
-    Colour colour = Vec3(0.0f, 0.0f, 0.0f);
+    Colour colour = black();
     float time = INFINITY;
     int index = -1;
     for(int i = 0; i < numShapes; i++){
@@ -107,24 +107,34 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
         //hit nothing
         return black();
     }
+    Colour ambientColour = black();
+    Colour diffuseColour = black();
+    Colour specularColour = black();
 
     Vec3 hitPos = origin + ray*time; // posistion on the object that was hit
 
-    Vec3 normal;
-    Colour shade;
-    Colour spec;
-    float specCof;
-    float reflective;
+    Vec3 normal = shapes[index]->get_normal(hitPos);;
+    Colour shade = shapes[index]->get_colour();;
+    Colour spec = shapes[index]->get_spec();;
+    float specCof = shapes[index]->get_specCof();;
+    float reflective = shapes[index]->get_reflective();
+    Vec3 ambientCol = shapes[index]->get_ambientCol();
 
     //ambient
-    shade = shapes[index]->get_colour();
-    Vec3 ambientCol = shapes[index]->get_ambientCol();
-    colour = ambient*ambientCol*lightInt;
+    ambientColour = ambient*ambientCol*lightInt;
 
-    normal = shapes[index]->get_normal(hitPos);
-    spec = shapes[index]->get_spec();
-    specCof = shapes[index]->get_specCof();
-    reflective = shapes[index]->get_reflective();
+    // check if the point is in shadow
+    int shadowCount = 0;
+    for(int i = 0; i < numLights; i++){
+        if(isShadow(shapes, numShapes, hitPos, lightPos[i], index)){
+            shadowCount++;
+        }
+    }
+
+    if(shadowCount>0){
+        // point is in shadow of at least one light soruce
+        return ambientColour + ambientColour*(numLights - shadowCount);
+    }
 
     for(int i = 0; i < numLights; i++){
         Vec3 lightDir = lightPos[i] - hitPos;
@@ -132,7 +142,7 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
 
         //Diffuse
         float diffuse = std::fmaxf(normal.dot(lightDir), 0.0f);
-        colour += 0.5f*diffuse*lightInt*shade;
+        diffuseColour = 0.5f*diffuse*lightInt*shade;
 
         Vec3 V = origin - hitPos;
         V = V.normalized();
@@ -141,12 +151,12 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
         float specular = H.dot(normal);
 
         if(diffuse > 0.0f){ // Specular is added only if the diffuse is greater than 0
-            colour += 0.5f*std::powf((std::max(0.0f, specular)), specCof)*spec*lightInt;
+            specularColour = 0.5f*std::powf((std::max(0.0f, specular)), specCof)*spec*lightInt;
         }
     }
 
     if(reflective == 0.0f){
-        return colour;
+        return ambientColour + diffuseColour + specularColour;
     }
 
 
@@ -154,9 +164,37 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
     R = R.normalized();
     //Add the reflected colour to reflective surfaces
 
-    return colour*3.0f;
+    return ambientColour + diffuseColour + specularColour;
 }
 
+/**
+ * @brief isShadow - checks if the point in the scene is in shadow for the given light
+ * @param spheres - sphere array to check intersection
+ * @param numSpheres - number of spheres in the scene
+ * @param planes - plane array to check intersection
+ * @param numPlanes - number of planes in the scenee
+ * @param origin - the initial point of the ray
+ * @param lightPos - array of lights
+ * @param index - index of the object the given point is on
+ * @return - boolean value for if the point is in shadow
+ */
+bool isShadow(shape * shapes[], int numShapes, Vec3 &origin, Vec3 &lightPos, int index){
+    Vec3 lightDir = lightPos - origin;
+    lightDir = lightDir.normalized();
+    float time0 = (lightPos - origin)(0)/lightDir(0);
+    float time1 = (lightPos - origin)(1)/lightDir(1);
+    float time2 = (lightPos - origin)(2)/lightDir(2);
+
+    float time = std::fmaxf(time0, time1);
+    time = std::fmaxf(time, time2);
+    for(int i = 0; i < numShapes; i++){
+        float t = shapes[i]->intersect(origin, lightDir);
+        if(t > 0.00001f && t < time){
+            return true;
+        }
+    }
+    return false;
+}
 
 
 /**
@@ -337,68 +375,6 @@ Colour trace(Vec3 &ray, shape * shapes[], int numShapes, Vec3 &origin, Vec3 ligh
 //    //Add the reflected colour to reflective surfaces
 //    colour += reflective*trace(R, spheres, numSpheres, planes, numPlanes, hitPos, lightPos, lightInt, depth+1, ambient, numLights);
 //    return colour;
-//}
-
-/**
- * @brief isShadow - checks if the point in the scene is in shadow for the given light
- * @param spheres - sphere array to check intersection
- * @param numSpheres - number of spheres in the scene
- * @param planes - plane array to check intersection
- * @param numPlanes - number of planes in the scenee
- * @param origin - the initial point of the ray
- * @param lightPos - array of lights
- * @param index - index of the object the given point is on
- * @return - boolean value for if the point is in shadow
- */
-//bool isShadow(sphere spheres[], int numSpheres, plane planes[], int numPlanes, Vec3 &origin, Vec3 &lightPos, int index){
-//    Vec3 lightDir = lightPos - origin;
-//    lightDir = lightDir.normalized();
-//    float time0 = (lightPos - origin)(0)/lightDir(0);
-//    float time1 = (lightPos - origin)(1)/lightDir(1);
-//    float time2 = (lightPos - origin)(2)/lightDir(2);
-
-//    float time = std::fmaxf(time0, time1);
-//    time = std::fmaxf(time, time2);
-
-//    //float time = INFINITY;
-//    for(int i = 0; i < numSpheres; i++){
-//        if(index < numSpheres && index == i){
-//            continue;
-//        }
-//        float t = INFINITY;
-//        //ray-sphere intersection
-//        /// TODO: ray sphere intersection and shading
-//        Vec3 originSubC = origin - spheres[i].get_center(); // camera - sphere center
-//        // calculate the discriminet to see if the ray hits the sphere
-//        float disc = std::powf(lightDir.dot(originSubC), 2) - originSubC.dot(originSubC) + spheres[i].get_radius()*spheres[i].get_radius();
-
-//        if(disc >= 0){
-//            // Hits the sphere
-//            t = -(lightDir.dot(originSubC)) - std::sqrtf(disc);
-//        }
-
-//        if(t < time && t > 0.0001f){
-//            return true;
-//        }
-//    }
-//    // Ray plane intersection
-//    for(int i = 0; i < numPlanes; i++){
-//        if(index >= numSpheres && index == (i + numSpheres)){
-//            continue;
-//        }
-//         float t = INFINITY;
-//        if((planes[i].get_center() - origin).dot(planes[i].get_normal()) != 0){
-//            // ray intersects plane
-//            t = ((planes[i].get_center() - origin).dot(planes[i].get_normal()))/(lightDir.dot(planes[i].get_normal()));
-//            if(t > 0.001f){
-//                // intersects in front of camera
-//                if(t < time){
-//                    return true;
-//                }
-//            }
-//        }
-//    }
-//    return false;
 //}
 
 /**
